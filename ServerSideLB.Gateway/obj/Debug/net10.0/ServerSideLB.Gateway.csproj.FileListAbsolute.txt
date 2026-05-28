@@ -30,3 +30,4 @@ C:\Users\riada\back-end projects\project\ServerSideLB.Gateway\obj\Debug\net10.0\
 C:\Users\riada\back-end projects\project\ServerSideLB.Gateway\obj\Debug\net10.0\ServerSideLB.Gateway.pdb
 C:\Users\riada\back-end projects\project\ServerSideLB.Gateway\obj\Debug\net10.0\ServerSideLB.Gateway.genruntimeconfig.cache
 C:\Users\riada\back-end projects\project\ServerSideLB.Gateway\obj\Debug\net10.0\ref\ServerSideLB.Gateway.dll
+C:\Users\riada\back-end projects\project\ServerSideLB.Gateway\obj\Debug\net10.0\ServerSideLB.Gateway.sourcelink.json

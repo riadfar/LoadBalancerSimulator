@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/network/load_balancer_interceptor.dart';
 import '../bloc/load_balancer_bloc.dart';
 import 'server_card.dart';
 
-// Must match LoadBalancerInterceptor._servers minus the "http://" scheme.
+// Must match kBackendIp defined in load_balancer_interceptor.dart.
 const List<String> _kServerHosts = [
-  '10.237.129.242:5001',
-  '10.237.129.242:5002',
-  '10.237.129.242:5003',
+  '$kBackendIp:5001',
+  '$kBackendIp:5002',
+  '$kBackendIp:5003',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

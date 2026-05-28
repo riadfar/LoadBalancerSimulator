@@ -26,3 +26,4 @@ C:\Users\riada\back-end projects\project\ClientSideLB.Backend\obj\Debug\net10.0\
 C:\Users\riada\back-end projects\project\ClientSideLB.Backend\obj\Debug\net10.0\ClientSideLB.Backend.pdb
 C:\Users\riada\back-end projects\project\ClientSideLB.Backend\obj\Debug\net10.0\ClientSideLB.Backend.genruntimeconfig.cache
 C:\Users\riada\back-end projects\project\ClientSideLB.Backend\obj\Debug\net10.0\ref\ClientSideLB.Backend.dll
+C:\Users\riada\back-end projects\project\ClientSideLB.Backend\obj\Debug\net10.0\ClientSideLB.Backend.sourcelink.json

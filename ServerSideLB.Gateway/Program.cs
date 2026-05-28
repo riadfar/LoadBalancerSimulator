@@ -31,4 +31,4 @@ builder.Services.AddReverseProxy()
 
 var app = builder.Build();
 app.MapReverseProxy();
-app.Run("http://localhost:5000");
+app.Run();

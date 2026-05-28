@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/network/load_balancer_architecture.dart';
+import '../../../../core/network/load_balancer_interceptor.dart';
 import '../../../../core/network/network_facade.dart';
 
 part 'load_balancer_event.dart';
@@ -70,7 +71,12 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
         // Non-JSON payload — activeLoad and server stay at defaults.
       }
 
-      if (server.isNotEmpty) _serverLoads[server] = activeLoad;
+      for (final port in ['5001', '5002', '5003']) {
+        if (server.contains(port)) {
+          _serverLoads['$kBackendIp:$port'] = activeLoad;
+          break;
+        }
+      }
 
       emit(LoadBalancerSuccess(
         responseBody: raw,

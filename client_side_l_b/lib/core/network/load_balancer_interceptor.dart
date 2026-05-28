@@ -2,6 +2,12 @@ import 'package:dio/dio.dart';
 
 import 'load_balancer_architecture.dart';
 
+// ── CONFIGURE THIS ────────────────────────────────────────────────────────────
+/// Android emulator → keep '10.0.2.2'  (host-machine localhost alias).
+/// Physical device  → set to your LAN IP, e.g. '10.237.129.242'.
+const String kBackendIp = '192.168.1.4';
+// ─────────────────────────────────────────────────────────────────────────────
+
 /// A Dio [Interceptor] that implements two load-balancing strategies:
 ///
 /// 1. **Round-Robin** (onRequest): Distributes outgoing requests evenly across
@@ -21,9 +27,9 @@ class LoadBalancerInterceptor extends Interceptor {
   // ── Server registry ────────────────────────────────────────────────────────
 
   static const List<String> _servers = [
-    'http://10.237.129.242:5001',
-    'http://10.237.129.242:5002',
-    'http://10.237.129.242:5003',
+    'http://$kBackendIp:5001',
+    'http://$kBackendIp:5002',
+    'http://$kBackendIp:5003',
   ];
 
   // ── Round-robin state ──────────────────────────────────────────────────────
@@ -50,7 +56,7 @@ class LoadBalancerInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (currentArchitecture == LoadBalancerArchitecture.serverSide) {
-      options.baseUrl = 'http://10.0.2.2:5000';
+      options.baseUrl = 'http://$kBackendIp:5000';
       return handler.next(options);
     }
 
