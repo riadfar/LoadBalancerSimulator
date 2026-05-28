@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(dotnet build *)",
+      "Bash(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\riada\\\\back-end projects\\\\project\\\\client_side_l_b\\\\lib\\\\features\\\\load_balancer\\\\presentation\\\\widgets\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"done\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\riada\\\\back-end projects\\\\project\" -Directory)",
+      "Bash(Select-Object Name)"
+    ]
+  }
+}

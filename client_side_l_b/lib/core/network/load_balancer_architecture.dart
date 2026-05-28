@@ -1,0 +1,1 @@
+enum LoadBalancerArchitecture { clientSide, serverSide }
