@@ -4,15 +4,17 @@ sealed class LoadBalancerState extends Equatable {
   final Map<String, int>  serverLoads;
   final Map<String, bool> serverHealth;
   final LoadBalancerArchitecture architecture;
+  final LoadBalancerAlgorithm    algorithm;
 
   const LoadBalancerState({
     this.serverLoads  = const <String, int>{},
     this.serverHealth = const <String, bool>{},
     this.architecture = LoadBalancerArchitecture.clientSide,
+    this.algorithm    = LoadBalancerAlgorithm.roundRobin,
   });
 
   @override
-  List<Object?> get props => [serverLoads, serverHealth, architecture];
+  List<Object?> get props => [serverLoads, serverHealth, architecture, algorithm];
 }
 
 final class LoadBalancerInitial extends LoadBalancerState {
@@ -20,6 +22,7 @@ final class LoadBalancerInitial extends LoadBalancerState {
     super.serverLoads  = const <String, int>{},
     super.serverHealth = const <String, bool>{},
     super.architecture = LoadBalancerArchitecture.clientSide,
+    super.algorithm    = LoadBalancerAlgorithm.roundRobin,
   });
 }
 
@@ -30,6 +33,7 @@ final class LoadBalancerHealthUpdated extends LoadBalancerState {
     required super.serverLoads,
     required super.serverHealth,
     required super.architecture,
+    required super.algorithm,
   });
 }
 
@@ -46,10 +50,14 @@ final class LoadBalancerSuccess extends LoadBalancerState {
     required super.serverLoads,
     required super.serverHealth,
     required super.architecture,
+    required super.algorithm,
   });
 
   @override
-  List<Object?> get props => [responseBody, activeLoad, endpoint, serverLoads, serverHealth, architecture];
+  List<Object?> get props => [
+    responseBody, activeLoad, endpoint,
+    serverLoads, serverHealth, architecture, algorithm,
+  ];
 }
 
 /// Emitted when all failover attempts have been exhausted.
@@ -63,8 +71,12 @@ final class LoadBalancerFailure extends LoadBalancerState {
     required super.serverLoads,
     required super.serverHealth,
     required super.architecture,
+    required super.algorithm,
   });
 
   @override
-  List<Object?> get props => [error, endpoint, serverLoads, serverHealth, architecture];
+  List<Object?> get props => [
+    error, endpoint,
+    serverLoads, serverHealth, architecture, algorithm,
+  ];
 }

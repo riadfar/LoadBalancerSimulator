@@ -8,7 +8,8 @@
       "Bash(Out-Null)",
       "Bash(Write-Output \"done\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\riada\\\\back-end projects\\\\project\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\riada\\\\back-end projects\\\\project\\\\client_side_l_b\\\\lib\" -Recurse | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\riada\\\\back-end projects\\\\project\\\\client_side_l_b\\\\\", \"\"\\) } | Sort-Object)"
     ]
   }
 }

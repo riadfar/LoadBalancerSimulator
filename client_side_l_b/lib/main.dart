@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'features/load_balancer/presentation/screens/dashboard_screen.dart';
+import 'core/network/network_facade.dart';
+import 'features/load_balancer/presentation/bloc/load_balancer_bloc.dart';
+import 'features/load_balancer/presentation/screens/setup_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,14 +23,17 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Client-Side Load Balancer',
+      title: 'Load Balancing Test Bench',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF1987E7),
+        colorSchemeSeed: const Color(0xFF6826BD),
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: const DashboardScreen(),
+      home: BlocProvider(
+        create: (_) => LoadBalancerBloc(networkFacade: NetworkFacade()),
+        child: const SetupScreen(),
+      ),
     );
   }
 }

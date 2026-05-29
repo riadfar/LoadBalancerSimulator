@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 
 import 'load_balancer_architecture.dart';
@@ -42,7 +44,7 @@ class LoadBalancerInterceptor extends Interceptor {
   // RequestOptions.extra, so the failover logic can detect exhaustion.
   static const String _triedKey = '_lb_tried';
 
-  // ── Health callback ────────────────────────────────────────────────────────
+  // ── Health & load tracking ─────────────────────────────────────────────────
 
   // Mutable — set by NetworkFacade after the interceptor is installed so
   // the BLoC can wire it up without needing a constructor argument.
@@ -51,18 +53,43 @@ class LoadBalancerInterceptor extends Interceptor {
   // Controls which architecture is active. Set via NetworkFacade setter.
   LoadBalancerArchitecture currentArchitecture = LoadBalancerArchitecture.clientSide;
 
+  // Controls which client-side algorithm is active. Set via NetworkFacade setter.
+  LoadBalancerAlgorithm currentAlgorithm = LoadBalancerAlgorithm.roundRobin;
+
+  // Tracks the last known active-load value per server URL, used by
+  // the Least-Connections algorithm to pick the least busy server.
+  final Map<String, int> _liveLoads = {};
+
   // ── Interceptor overrides ──────────────────────────────────────────────────
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (currentArchitecture == LoadBalancerArchitecture.serverSide) {
       options.baseUrl = 'http://$kBackendIp:5000';
+      options.headers['X-LB-Algo'] = currentAlgorithm.name;
       return handler.next(options);
     }
 
-    // Atomically claim the current cursor and advance it for the next request.
-    final index = _rrCursor;
-    _rrCursor = (_rrCursor + 1) % _servers.length;
+    // ── Client-side routing ────────────────────────────────────────────────
+    final int index;
+    if (currentAlgorithm == LoadBalancerAlgorithm.roundRobin) {
+      index = _rrCursor;
+      _rrCursor = (_rrCursor + 1) % _servers.length;
+    } else if (currentAlgorithm == LoadBalancerAlgorithm.random) {
+      index = Random().nextInt(_servers.length);
+    } else {
+      // leastConnections — pick the server with the lowest known active load.
+      var minIndex = 0;
+      var minLoad = _liveLoads[_servers[0]] ?? 0;
+      for (var i = 1; i < _servers.length; i++) {
+        final load = _liveLoads[_servers[i]] ?? 0;
+        if (load < minLoad) {
+          minLoad = load;
+          minIndex = i;
+        }
+      }
+      index = minIndex;
+    }
 
     options.baseUrl = _servers[index];
     // Seed the "tried" list so failover knows where the chain started.
@@ -77,6 +104,18 @@ class LoadBalancerInterceptor extends Interceptor {
     if (currentArchitecture == LoadBalancerArchitecture.clientSide) {
       onHealthChanged?.call(response.requestOptions.baseUrl, true);
     }
+
+    // Update live-load snapshot for the Least-Connections algorithm.
+    try {
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final load = (data['activeLoad'] as num?)?.toInt();
+        if (load != null) {
+          _liveLoads[response.requestOptions.baseUrl] = load;
+        }
+      }
+    } catch (_) {}
+
     handler.next(response);
   }
 

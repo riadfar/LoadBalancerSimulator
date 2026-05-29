@@ -39,6 +39,9 @@ class NetworkFacade {
   set currentArchitecture(LoadBalancerArchitecture v) =>
       _interceptor.currentArchitecture = v;
 
+  set currentAlgorithm(LoadBalancerAlgorithm v) =>
+      _interceptor.currentAlgorithm = v;
+
   /// Sends a GET request to [endpoint] on whichever backend instance the
   /// load-balancer selects, and returns the response body as a valid JSON
   /// string.

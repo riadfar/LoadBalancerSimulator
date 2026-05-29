@@ -65,3 +65,13 @@ final class ArchitectureToggled extends LoadBalancerEvent {
   @override
   List<Object?> get props => [architecture];
 }
+
+/// Dispatched by the Setup Screen to select a load-balancing algorithm.
+final class AlgorithmToggled extends LoadBalancerEvent {
+  final LoadBalancerAlgorithm algorithm;
+
+  const AlgorithmToggled(this.algorithm);
+
+  @override
+  List<Object?> get props => [algorithm];
+}
