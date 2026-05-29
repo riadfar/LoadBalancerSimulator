@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ServerSideLB.Gateway")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8941a89e42ec70e6a7657577396dc7e0475fd3ab")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+59b5dae39fb46500417f35507ebf813aaa79a8cd")]
 [assembly: System.Reflection.AssemblyProductAttribute("ServerSideLB.Gateway")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ServerSideLB.Gateway")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
