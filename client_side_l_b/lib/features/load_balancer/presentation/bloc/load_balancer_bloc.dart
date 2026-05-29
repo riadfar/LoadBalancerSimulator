@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/metrics/session_metrics.dart';
 import '../../../../core/network/load_balancer_architecture.dart';
 import '../../../../core/network/load_balancer_interceptor.dart';
 import '../../../../core/network/network_facade.dart';
@@ -20,6 +21,9 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
   final Map<String, int>  _serverLoads  = {};
   final Map<String, bool> _serverHealth = {};
   LoadBalancerArchitecture _architecture = LoadBalancerArchitecture.clientSide;
+  LoadBalancerAlgorithm    _algorithm    = LoadBalancerAlgorithm.roundRobin;
+  final SessionMetrics     _metrics      = SessionMetrics();
+  SessionMetrics get metrics => _metrics;
 
   LoadBalancerBloc({required NetworkFacade networkFacade})
       : _networkFacade = networkFacade,
@@ -50,6 +54,7 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
     on<ResetDashboardRequested>(_onResetDashboardRequested);
     on<ServerHealthChanged>(_onServerHealthChanged);
     on<ArchitectureToggled>(_onArchitectureToggled);
+    on<AlgorithmToggled>(_onAlgorithmToggled);
   }
 
   // ── Core request handler ───────────────────────────────────────────────────
@@ -58,22 +63,27 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
     String endpoint,
     Emitter<LoadBalancerState> emit,
   ) async {
+    _metrics.recordRequest(endpoint);
+
     try {
       final raw = await _networkFacade.sendRequest(endpoint);
 
-      var activeLoad = 0;
-      var server = '';
+      var activeLoad      = 0;
+      var server          = '';
+      var executionTimeMs = 0;
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
-        activeLoad = (json['activeLoad'] as num?)?.toInt() ?? 0;
-        server = (json['server'] as String?) ?? '';
+        activeLoad      = (json['activeLoad']      as num?)?.toInt() ?? 0;
+        server          = (json['server']          as String?) ?? '';
+        executionTimeMs = (json['executionTimeMs'] as num?)?.toInt() ?? 0;
       } catch (_) {
-        // Non-JSON payload — activeLoad and server stay at defaults.
+        // Non-JSON payload — fields stay at defaults.
       }
 
       for (final port in ['5001', '5002', '5003']) {
         if (server.contains(port)) {
           _serverLoads['$kBackendIp:$port'] = activeLoad;
+          _metrics.recordResponse('$kBackendIp:$port', endpoint, executionTimeMs);
           break;
         }
       }
@@ -85,6 +95,7 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
         serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
         serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
         architecture: _architecture,
+        algorithm:    _algorithm,
       ));
     } on DioException catch (e) {
       emit(LoadBalancerFailure(
@@ -93,6 +104,7 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
         serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
         serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
         architecture: _architecture,
+        algorithm:    _algorithm,
       ));
     } catch (e) {
       emit(LoadBalancerFailure(
@@ -101,6 +113,7 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
         serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
         serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
         architecture: _architecture,
+        algorithm:    _algorithm,
       ));
     }
   }
@@ -121,6 +134,7 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
       serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
       serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
       architecture: _architecture,
+      algorithm:    _algorithm,
     ));
   }
 
@@ -132,7 +146,8 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
   ) {
     _serverLoads.clear();
     _serverHealth.clear();
-    emit(LoadBalancerInitial(architecture: _architecture));
+    _metrics.reset();
+    emit(LoadBalancerInitial(architecture: _architecture, algorithm: _algorithm));
   }
 
   // ── Stress test handler ────────────────────────────────────────────────────
@@ -159,6 +174,23 @@ class LoadBalancerBloc extends Bloc<LoadBalancerEvent, LoadBalancerState> {
       serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
       serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
       architecture: _architecture,
+      algorithm:    _algorithm,
+    ));
+  }
+
+  // ── Algorithm toggle handler ───────────────────────────────────────────────
+
+  void _onAlgorithmToggled(
+    AlgorithmToggled event,
+    Emitter<LoadBalancerState> emit,
+  ) {
+    _algorithm = event.algorithm;
+    _networkFacade.currentAlgorithm = event.algorithm;
+    emit(LoadBalancerInitial(
+      serverLoads:  Map.unmodifiable(Map<String, int>.from(_serverLoads)),
+      serverHealth: Map.unmodifiable(Map<String, bool>.from(_serverHealth)),
+      architecture: _architecture,
+      algorithm:    _algorithm,
     ));
   }
 

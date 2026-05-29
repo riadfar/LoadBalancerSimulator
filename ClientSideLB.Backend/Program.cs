@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 // ── Shared state ──────────────────────────────────────────────────────────────
@@ -40,13 +41,15 @@ static void Log(
 // ─────────────────────────────────────────────────────────────────────────────
 app.MapGet("/api/ping", (HttpContext ctx) =>
 {
+    var sw     = Stopwatch.StartNew();
     var load   = Interlocked.Increment(ref activeLoad);
     var server = ctx.Request.Host.ToString();
     Log("IN", "/api/ping", "lightweight request received", load, ConsoleColor.Green);
 
     try
     {
-        return Results.Ok(new { status = "Success", type = "Lightweight", server, activeLoad = load });
+        sw.Stop();
+        return Results.Ok(new { status = "Success", type = "Lightweight", server, activeLoad = load, executionTimeMs = sw.ElapsedMilliseconds });
     }
     finally
     {
@@ -59,6 +62,7 @@ app.MapGet("/api/ping", (HttpContext ctx) =>
 // ─────────────────────────────────────────────────────────────────────────────
 app.MapGet("/api/cpu-bound", (HttpContext ctx) =>
 {
+    var sw     = Stopwatch.StartNew();
     var load   = Interlocked.Increment(ref activeLoad);
     var server = ctx.Request.Host.ToString();
     Log("IN", "/api/cpu-bound", "starting CPU work — 5 000 × SHA-512", load, ConsoleColor.Magenta);
@@ -71,7 +75,8 @@ app.MapGet("/api/cpu-bound", (HttpContext ctx) =>
             RandomNumberGenerator.Fill(buffer);
             SHA512.HashData(buffer);
         }
-        return Results.Ok(new { status = "Success", type = "CpuBound", server, activeLoad = load });
+        sw.Stop();
+        return Results.Ok(new { status = "Success", type = "CpuBound", server, activeLoad = load, executionTimeMs = sw.ElapsedMilliseconds });
     }
     finally
     {
@@ -84,6 +89,7 @@ app.MapGet("/api/cpu-bound", (HttpContext ctx) =>
 // ─────────────────────────────────────────────────────────────────────────────
 app.MapGet("/api/io-bound", async (HttpContext ctx) =>
 {
+    var sw     = Stopwatch.StartNew();
     var load   = Interlocked.Increment(ref activeLoad);
     var server = ctx.Request.Host.ToString();
     Log("IN", "/api/io-bound", "simulating 3 s I/O delay…", load, ConsoleColor.Cyan);
@@ -91,7 +97,8 @@ app.MapGet("/api/io-bound", async (HttpContext ctx) =>
     try
     {
         await Task.Delay(3_000);
-        return Results.Ok(new { status = "Success", type = "IoBound", server, activeLoad = load });
+        sw.Stop();
+        return Results.Ok(new { status = "Success", type = "IoBound", server, activeLoad = load, executionTimeMs = sw.ElapsedMilliseconds });
     }
     finally
     {
@@ -107,6 +114,7 @@ app.MapGet("/api/io-bound", async (HttpContext ctx) =>
 // ─────────────────────────────────────────────────────────────────────────────
 app.MapGet("/api/unstable", (HttpContext ctx) =>
 {
+    var sw      = Stopwatch.StartNew();
     var load    = Interlocked.Increment(ref activeLoad);
     var server  = ctx.Request.Host.ToString();
     var isError = false;
@@ -119,7 +127,8 @@ app.MapGet("/api/unstable", (HttpContext ctx) =>
             isError = true;
             return Results.StatusCode(500);
         }
-        return Results.Ok(new { status = "Success", type = "Unstable", server, activeLoad = load });
+        sw.Stop();
+        return Results.Ok(new { status = "Success", type = "Unstable", server, activeLoad = load, executionTimeMs = sw.ElapsedMilliseconds });
     }
     finally
     {

@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/network/load_balancer_architecture.dart';
-import '../../../../core/network/network_facade.dart';
 import '../bloc/load_balancer_bloc.dart';
+import 'report_screen.dart';
 import '../widgets/burst_controller/burst_controller.dart';
 import '../widgets/dashboard_theme.dart';
 import '../widgets/label.dart';
@@ -19,12 +18,7 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => LoadBalancerBloc(networkFacade: NetworkFacade()),
-      child: const _DashboardBody(),
-    );
-  }
+  Widget build(BuildContext context) => const _DashboardBody();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -103,8 +97,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _ArchitectureToggle(),
-                const SizedBox(height: 14),
                 const Label(title: 'CLUSTER STATUS'),
                 const SizedBox(height: 12),
                 const ClusterStatus(),
@@ -169,6 +161,18 @@ class _DashboardBodyState extends State<_DashboardBody> {
       ),
       actions: [
         IconButton(
+          icon: const Icon(Icons.analytics_rounded, color: Colors.white, size: 22),
+          tooltip: 'Session report',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ReportScreen(
+                metrics: context.read<LoadBalancerBloc>().metrics,
+              ),
+            ),
+          ),
+        ),
+        IconButton(
           icon: const Icon(
             Icons.refresh_rounded,
             color: Colors.white,
@@ -195,43 +199,3 @@ class _DashboardBodyState extends State<_DashboardBody> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Architecture toggle — switches between Client-Side and Server-Side LB
-// ─────────────────────────────────────────────────────────────────────────────
-class _ArchitectureToggle extends StatelessWidget {
-  const _ArchitectureToggle();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<LoadBalancerBloc, LoadBalancerState>(
-      buildWhen: (p, n) => p.architecture != n.architecture,
-      builder: (context, state) {
-        return SegmentedButton<LoadBalancerArchitecture>(
-          style: SegmentedButton.styleFrom(
-            backgroundColor: kSurface,
-            foregroundColor: kMuted,
-            selectedForegroundColor: Colors.white,
-            selectedBackgroundColor: kPrimary,
-            side: const BorderSide(color: kBorder),
-          ),
-          segments: const [
-            ButtonSegment(
-              value: LoadBalancerArchitecture.clientSide,
-              label: Text('Client-Side LB'),
-              icon: Icon(Icons.device_hub_rounded, size: 15),
-            ),
-            ButtonSegment(
-              value: LoadBalancerArchitecture.serverSide,
-              label: Text('Server-Side LB'),
-              icon: Icon(Icons.cloud_rounded, size: 15),
-            ),
-          ],
-          selected: {state.architecture},
-          onSelectionChanged: (val) => context
-              .read<LoadBalancerBloc>()
-              .add(ArchitectureToggled(val.first)),
-        );
-      },
-    );
-  }
-}
