@@ -1,8 +1,10 @@
-import 'dart:math';
-
 import 'package:dio/dio.dart';
 
 import 'load_balancer_architecture.dart';
+import 'strategies/least_connections_strategy.dart';
+import 'strategies/load_balancing_strategy.dart';
+import 'strategies/random_strategy.dart';
+import 'strategies/round_robin_strategy.dart';
 
 // ── CONFIGURE THIS ────────────────────────────────────────────────────────────
 /// Android emulator → keep '10.0.2.2'  (host-machine localhost alias).
@@ -34,15 +36,17 @@ class LoadBalancerInterceptor extends Interceptor {
     'http://$kBackendIp:5003',
   ];
 
-  // ── Round-robin state ──────────────────────────────────────────────────────
-
-  // Static so all requests share one global cursor, even if multiple Dio
-  // instances each hold a reference to a different interceptor instance.
-  static int _rrCursor = 0;
+  // ── Failover state ────────────────────────────────────────────────────────
 
   // Key used to store the list of already-tried server indices inside
   // RequestOptions.extra, so the failover logic can detect exhaustion.
   static const String _triedKey = '_lb_tried';
+
+  // ── Strategy instances ────────────────────────────────────────────────────
+
+  final LoadBalancingStrategy _roundRobinStrategy       = RoundRobinStrategy();
+  final LoadBalancingStrategy _randomStrategy           = RandomStrategy();
+  final LoadBalancingStrategy _leastConnectionsStrategy = LeastConnectionsStrategy();
 
   // ── Health & load tracking ─────────────────────────────────────────────────
 
@@ -71,25 +75,12 @@ class LoadBalancerInterceptor extends Interceptor {
     }
 
     // ── Client-side routing ────────────────────────────────────────────────
-    final int index;
-    if (currentAlgorithm == LoadBalancerAlgorithm.roundRobin) {
-      index = _rrCursor;
-      _rrCursor = (_rrCursor + 1) % _servers.length;
-    } else if (currentAlgorithm == LoadBalancerAlgorithm.random) {
-      index = Random().nextInt(_servers.length);
-    } else {
-      // leastConnections — pick the server with the lowest known active load.
-      var minIndex = 0;
-      var minLoad = _liveLoads[_servers[0]] ?? 0;
-      for (var i = 1; i < _servers.length; i++) {
-        final load = _liveLoads[_servers[i]] ?? 0;
-        if (load < minLoad) {
-          minLoad = load;
-          minIndex = i;
-        }
-      }
-      index = minIndex;
-    }
+    final strategy = switch (currentAlgorithm) {
+      LoadBalancerAlgorithm.roundRobin       => _roundRobinStrategy,
+      LoadBalancerAlgorithm.random           => _randomStrategy,
+      LoadBalancerAlgorithm.leastConnections => _leastConnectionsStrategy,
+    };
+    final index = strategy.getNextServerIndex(_servers, _liveLoads);
 
     options.baseUrl = _servers[index];
     // Seed the "tried" list so failover knows where the chain started.
